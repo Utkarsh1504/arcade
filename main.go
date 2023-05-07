@@ -3,16 +3,30 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<h1>Welcome to my awesome site!</h1>")
+	// TODO: URLParam
+	name := r.URL.Query().Get("name")
+
+	if name != "" {
+		fmt.Fprintf(w, `<h1>Welcome, %s!</h1>`, name)
+	} else {
+		fmt.Fprintf(w, "<h1>Welcome to my awesome site!</h1>")
+	}
 }
 
 func contactHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<h1>Contact Page</h1><p>To get in touch, email me at <a href=\"mailto:umishra1504@gmail.com\">umishra1504@gmail.com</a>.</p>")
+	fmt.Fprint(w, `<h1>Contact Page</h1>
+	<p>
+		To get in touch, email me at 
+		<a href=\"mailto:umishra1504@gmail.com\">umishra1504@gmail.com</a>.
+	</p>`)
 }
 
 func faqHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,37 +51,16 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 	`)
 }
 
-// func pathHandler(w http.ResponseWriter, r *http.Request) {
-// 	switch r.URL.Path {
-// 	case "/":
-// 		homeHandler(w, r)
-// 	case "/contact":
-// 		contactHandler(w, r)
-// 	default:
-// 		http.Error(w, "Page Not Found", http.StatusNotFound)
-// 	}
-// }
-
-type Router struct{}
-
-func (router Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/":
-		homeHandler(w, r)
-	case "/contact":
-		contactHandler(w, r)
-	case "/faq":
-		faqHandler(w, r)
-	default:
-		http.Error(w, "Page Not Found", http.StatusNotFound)
-	}
-}
-
 func main() {
-	// http.Handle("/", http.HandlerFunc(pathHandler))
-	// http.HandleFunc("/contact", http.HandlerFunc(pathHandler).ServeHTTP)
-	// http.ListenAndServe(":3000", nil)
-	var router Router
+	r := chi.NewRouter()
+	// TODO: Use logger middleware
+	r.Use(middleware.Logger)
+	r.Get("/", homeHandler)
+	r.Get("/contact", contactHandler)
+	r.Get("/faq", faqHandler)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Page Not Found", http.StatusNotFound)
+	})
 	fmt.Println("Server starting on 3000...")
-	http.ListenAndServe(":3000", router)
+	http.ListenAndServe(":3000", r)
 }
